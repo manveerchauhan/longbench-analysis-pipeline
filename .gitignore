@@ -1,0 +1,41 @@
+# R specific files
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+.Rapp.history
+*-Ex.R
+
+# Analysis outputs
+rarefaction_plots/
+threshold_analysis_plots/
+sc_processed_matrices/
+bulk_processed_matrices/
+*.rds
+*.RDS
+
+# Large data files
+*.csv
+*.tsv
+*.txt
+!sample_sheet.csv
+
+# Temporary files
+*.tmp
+*~
+*.swp
+.DS_Store
+.httr-oauth
+*.log
+
+# Package build process
+.Rbuildignore
+
+# Other common files to ignore
+*.pdf
+*.png
+*.jpg
+*.tiff
+*.jpeg
+*.html 
