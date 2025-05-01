@@ -1,6 +1,5 @@
 # Script to make rarefaction curve for matched bulk and sc PB and ONT data using filtered matrices
 
-library(Seurat)
 library(tidyverse)
 library(purrr)
 library(readr)
