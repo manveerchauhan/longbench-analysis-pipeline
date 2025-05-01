@@ -72,45 +72,47 @@ for(read_depth in sequencing_depths){
     stringsAsFactors = FALSE
   )
   
-  # Add tx_len and counts information from each source, prioritizing in the order:
-  # ONT_SC > PB_SC > ONT_Bulk > PB_Bulk
+  # Modified approach to calculate average counts across modalities
   for(i in 1:nrow(all_data)) {
     tx <- all_data$tx_id[i]
+    counts_values <- c()
     
-    # Try to get tx_len and counts from available sources
+    # Collect counts from all available modalities
     if(all_data$ONT_SC[i]) {
       idx <- which(ont_sc_matrix$tx_id == tx)
       if(length(idx) > 0) {
-        all_data$tx_len[i] <- ont_sc_matrix$tx_len[idx[1]]
-        all_data$counts[i] <- ont_sc_matrix$counts[idx[1]]
-        next
+        all_data$tx_len[i] <- ont_sc_matrix$tx_len[idx[1]]  # Still use tx_len from first source
+        counts_values <- c(counts_values, ont_sc_matrix$counts[idx[1]])
       }
     }
     
     if(all_data$PB_SC[i]) {
       idx <- which(pb_sc_matrix$tx_id == tx)
       if(length(idx) > 0) {
-        all_data$tx_len[i] <- pb_sc_matrix$tx_len[idx[1]]
-        all_data$counts[i] <- pb_sc_matrix$counts[idx[1]]
-        next
+        if(is.na(all_data$tx_len[i])) all_data$tx_len[i] <- pb_sc_matrix$tx_len[idx[1]]
+        counts_values <- c(counts_values, pb_sc_matrix$counts[idx[1]])
       }
     }
     
     if(all_data$ONT_Bulk[i]) {
       idx <- which(ont_bulk_matrix$tx_id == tx)
       if(length(idx) > 0) {
-        all_data$tx_len[i] <- ont_bulk_matrix$tx_len[idx[1]]
-        all_data$counts[i] <- ont_bulk_matrix$counts[idx[1]]
-        next
+        if(is.na(all_data$tx_len[i])) all_data$tx_len[i] <- ont_bulk_matrix$tx_len[idx[1]]
+        counts_values <- c(counts_values, ont_bulk_matrix$counts[idx[1]])
       }
     }
     
     if(all_data$PB_Bulk[i]) {
       idx <- which(pb_bulk_matrix$tx_id == tx)
       if(length(idx) > 0) {
-        all_data$tx_len[i] <- pb_bulk_matrix$tx_len[idx[1]]
-        all_data$counts[i] <- pb_bulk_matrix$counts[idx[1]]
+        if(is.na(all_data$tx_len[i])) all_data$tx_len[i] <- pb_bulk_matrix$tx_len[idx[1]]
+        counts_values <- c(counts_values, pb_bulk_matrix$counts[idx[1]])
       }
+    }
+    
+    # Calculate average counts if values were found
+    if(length(counts_values) > 0) {
+      all_data$counts[i] <- mean(counts_values)
     }
   }
   
