@@ -125,11 +125,11 @@ for(read_depth in sequencing_depths){
     c("ONT_SC", "PB_SC", "ONT_Bulk", "PB_Bulk"),
     name = 'sequencing_modality',
     annotations = list(
-      # Transcript length distribution
-      'Transcript Length (kb)' = list(
-        aes = aes(x = intersection, y = tx_len/1000),  # Convert to kb for readability
+      # Transcript length distribution (log10 scale in bp)
+      'Transcript Length (log10 bp)' = list(
+        aes = aes(x = intersection, y = log10(tx_len + 1)),  # Log10 transformation of bp values
         geom = list(
-          geom_boxplot(na.rm = TRUE, fill = "lightblue", alpha = 0.7)
+          geom_boxplot(na.rm = TRUE, fill = "lightblue", alpha = 0.7)  # Show outliers
         )
       ),
       # Read counts distribution (log10 scale)
@@ -183,6 +183,12 @@ transcript_properties <- data.frame(
 for(read_depth in sequencing_depths) {
   # Read the saved intersection data
   intersection_data <- readRDS(file.path(OUTPUT_DIR, paste0("transcript_intersection_data_", read_depth, "M.rds")))
+  
+  # Print summary statistics for transcript lengths
+  message(paste0("\nSummary statistics for transcript lengths at ", read_depth, "M sequencing depth:"))
+  print(summary(intersection_data$tx_len))
+  message(paste0("99th percentile: ", round(quantile(intersection_data$tx_len, 0.99, na.rm = TRUE))))
+  message(paste0("Number of transcripts: ", nrow(intersection_data)))
   
   # Count transcripts in each modality
   ont_sc_count <- sum(intersection_data$ONT_SC)
@@ -255,6 +261,11 @@ summary_long <- tidyr::pivot_longer(
   names_to = "Modality",
   values_to = "Count"
 )
+
+# Order the Depth factor from lowest to highest sequencing depth
+summary_long$Depth <- factor(summary_long$Depth, 
+                           levels = paste0(c("1569", "3923", "7846", "11769", "15692"), "M"),
+                           ordered = TRUE)
 
 counts_plot <- ggplot(summary_long, aes(x = Depth, y = Count, fill = Modality)) +
   geom_bar(stat = "identity", position = "dodge") +
