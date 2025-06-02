@@ -180,9 +180,15 @@ transcript_properties <- data.frame(
   stringsAsFactors = FALSE
 )
 
+# Create a nested list to store transcript IDs for each intersection set
+tx_intersection_ids <- list()
+
 for(read_depth in sequencing_depths) {
   # Read the saved intersection data
   intersection_data <- readRDS(file.path(OUTPUT_DIR, paste0("transcript_intersection_data_", read_depth, "M.rds")))
+  
+  # Create a list for this depth
+  tx_intersection_ids[[paste0(read_depth, "M")]] <- list()
   
   # Print summary statistics for transcript lengths
   message(paste0("\nSummary statistics for transcript lengths at ", read_depth, "M sequencing depth:"))
@@ -211,6 +217,15 @@ for(read_depth in sequencing_depths) {
     stringsAsFactors = FALSE
   ))
   
+  # Store transcript IDs for each modality
+  tx_intersection_ids[[paste0(read_depth, "M")]][["ONT_SC_Total"]] <- intersection_data$tx_id[intersection_data$ONT_SC]
+  tx_intersection_ids[[paste0(read_depth, "M")]][["PB_SC_Total"]] <- intersection_data$tx_id[intersection_data$PB_SC]
+  tx_intersection_ids[[paste0(read_depth, "M")]][["ONT_Bulk_Total"]] <- intersection_data$tx_id[intersection_data$ONT_Bulk]
+  tx_intersection_ids[[paste0(read_depth, "M")]][["PB_Bulk_Total"]] <- intersection_data$tx_id[intersection_data$PB_Bulk]
+  tx_intersection_ids[[paste0(read_depth, "M")]][["All_Modalities_Shared"]] <- 
+    intersection_data$tx_id[intersection_data$ONT_SC & intersection_data$PB_SC & 
+                            intersection_data$ONT_Bulk & intersection_data$PB_Bulk]
+  
   # Calculate properties for each intersection
   # Define all possible intersections
   intersections <- list(
@@ -231,7 +246,15 @@ for(read_depth in sequencing_depths) {
     "ONT_only" = (intersection_data$ONT_SC | intersection_data$ONT_Bulk) & 
       !intersection_data$PB_SC & !intersection_data$PB_Bulk,
     "PB_only" = !intersection_data$ONT_SC & !intersection_data$ONT_Bulk & 
-      (intersection_data$PB_SC | intersection_data$PB_Bulk)
+      (intersection_data$PB_SC | intersection_data$PB_Bulk),
+    "ONT_SC_and_PB_SC" = intersection_data$ONT_SC & intersection_data$PB_SC & 
+      !intersection_data$ONT_Bulk & !intersection_data$PB_Bulk,
+    "ONT_Bulk_and_PB_Bulk" = !intersection_data$ONT_SC & !intersection_data$PB_SC & 
+      intersection_data$ONT_Bulk & intersection_data$PB_Bulk,
+    "ONT_SC_and_ONT_Bulk" = intersection_data$ONT_SC & !intersection_data$PB_SC & 
+      intersection_data$ONT_Bulk & !intersection_data$PB_Bulk,
+    "PB_SC_and_PB_Bulk" = !intersection_data$ONT_SC & intersection_data$PB_SC & 
+      !intersection_data$ONT_Bulk & intersection_data$PB_Bulk
   )
   
   for(int_name in names(intersections)) {
@@ -245,6 +268,9 @@ for(read_depth in sequencing_depths) {
         Median_Counts = median(subset_data$counts, na.rm = TRUE),
         stringsAsFactors = FALSE
       ))
+      
+      # Store transcript IDs for this intersection
+      tx_intersection_ids[[paste0(read_depth, "M")]][[int_name]] <- subset_data$tx_id
     }
   }
 }
@@ -252,6 +278,10 @@ for(read_depth in sequencing_depths) {
 # Save summary tables
 write.csv(summary_data, file.path(OUTPUT_DIR, "transcript_counts_summary.csv"), row.names = FALSE)
 write.csv(transcript_properties, file.path(OUTPUT_DIR, "transcript_properties_summary.csv"), row.names = FALSE)
+
+# Save the transcript IDs for each intersection set
+saveRDS(tx_intersection_ids, file.path(OUTPUT_DIR, "transcript_intersection_ids.rds"))
+message("Saved transcript IDs for all intersection sets to transcript_intersection_ids.rds")
 
 # Create summary plots
 # 1. Bar plot of transcript counts by modality and depth
